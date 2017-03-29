@@ -43,7 +43,10 @@
     process.exit(1);
   });
 
-  const board = new five.Board({io: new Raspi()});
+  const board = new five.Board({
+    io: new Raspi(),
+    repl: false
+  });
   board.on('ready', () => {
     const led = new five.Led('P1-7');
     const temperature = new five.Thermometer({controller: 'TMP102'});
@@ -59,6 +62,10 @@
         temperatureRef.set(temperature.celsius)
         .catch((err) => logger.warn(err.message));
       }
+    });
+
+    board.on('exit', () => {
+      led.off();
     });
   });
 })();
