@@ -1,10 +1,6 @@
 (() => {
   'use strict';
 
-  const firebase = require('firebase');
-  const Raspi = require('raspi-io');
-  const five = require('johnny-five');
-
   const config = {
     apiKey: 'AIzaSyDTB8FOhoqeHj-kvxfkTjSxOIuCBYA_uXU',
     authDomain: 'pup-alert-dev.firebaseapp.com',
@@ -12,41 +8,47 @@
     storageBucket: 'pup-alert-dev.appspot.com',
     messagingSenderId: '483016445952'
   };
+  const firebase = require('firebase');
   firebase.initializeApp(config);
 
+  const Raspi = require('raspi-io');
+  const five = require('johnny-five');
+  const parseArgs = require('minimist');
+  const winston = require('winston');
+  const Auth = require('./src/auth');
+
+  const logger = new (winston.Logger)({
+    transports: [
+      new (winston.transports.Console)()
+    ]
+  });
+
+  const argv = parseArgs(process.argv.slice(2));
+
   const database = firebase.database();
-  const auth = firebase.auth();
 
-  const rootRef = database.ref();
   let temperatureRef = null;
-
-  auth.signInAnonymously()
-  .then(() => {
-    temperatureRef = rootRef.child('temperature').child(auth.currentUser.uid);
-  })
-  .catch((error) => {
-    // Handle Errors here.
-    const errorCode = error.code;
-    const errorMessage = error.message;
-
-    if (errorCode === 'auth/operation-not-allowed') {
-      console.warn('You must enable Anonymous auth in the Firebase Console.');
+  firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      temperatureRef = database.ref().child(`temperature/${user.uid}`);
     } else {
-      console.error(error);
+      temperatureRef = null;
     }
   });
 
-  const board = new five.Board({
-    io: new Raspi()
+  Auth.createAuth(argv)
+  .then((auth) => auth.signIn())
+  .catch((err) => {
+    logger.error(err);
+    process.exit(1);
   });
 
+  const board = new five.Board({io: new Raspi()});
   board.on('ready', () => {
     const led = new five.Led('P1-7');
-    led.off();
+    const temperature = new five.Thermometer({controller: 'TMP102'});
 
-    const temperature = new five.Thermometer({
-      controller: 'TMP102'
-    });
+    led.off();
 
     let timeout = null;
     temperature.on('change', () => {
@@ -55,9 +57,8 @@
       timeout = setTimeout(() => led.off(), 1000);
       if (null !== temperatureRef) {
         temperatureRef.set(temperature.celsius)
-        .catch((err) => console.warn(err.message));
+        .catch((err) => logger.warn(err.message));
       }
     });
   });
-
 })();

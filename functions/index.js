@@ -9,7 +9,6 @@
   admin.initializeApp(functions.config().firebase);
 
   const auth = admin.auth();
-  const database = admin.database();
 
   function randomBytes(size) {
     return new Promise((resolve, reject) => {

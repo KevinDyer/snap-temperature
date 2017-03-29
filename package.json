@@ -7,7 +7,17 @@
   "license": "MIT",
   "dependencies": {
     "firebase": "^3.7.2",
+    "fs-promise": "^2.0.2",
     "johnny-five": "^0.10.6",
-    "raspi-io": "^7.2.4"
+    "minimist": "^1.2.0",
+    "raspi-io": "^7.2.4",
+    "superagent": "^3.5.2",
+    "winston": "^2.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^3.18.0"
+  },
+  "scripts": {
+    "lint": "eslint --fix index.js src/ functions/"
   }
 }

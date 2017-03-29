@@ -41,3 +41,6 @@ parts/
 prime/
 stage/
 *.snap
+
+# Pup Alert
+userCredentials.json
